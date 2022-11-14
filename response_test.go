@@ -109,21 +109,21 @@ func (r *Response) SetStatus(status int) {
 
 // AddError appends an error-level diagnostic to the Response. It cannot be
 // called after Response.Send.
-func (r *Response) AddError(code apidiags.Code, pointers ...apidiags.Pointer) {
+func (r *Response) AddError(code apidiags.Code, paths ...apidiags.Steps) {
 	r.Diags = append(r.Diags, apidiags.Diagnostic{
 		Severity: apidiags.DiagnosticError,
 		Code:     code,
-		Pointers: pointers,
+		Paths:    paths,
 	})
 }
 
 // AddWarning appends a warning-level diagnostic to the Response. It cannot be
 // called after Response.Send.
-func (r *Response) AddWarning(code apidiags.Code, pointers ...apidiags.Pointer) {
+func (r *Response) AddWarning(code apidiags.Code, paths ...apidiags.Steps) {
 	r.Diags = append(r.Diags, apidiags.Diagnostic{
 		Severity: apidiags.DiagnosticWarning,
 		Code:     code,
-		Pointers: pointers,
+		Paths:    paths,
 	})
 }
 
