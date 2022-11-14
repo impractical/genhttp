@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/adjust/goautoneg v0.0.0-20150426214442-d788f35a0315
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.9
 	impractical.co/apidiags v0.0.0-20211123002912-499095f99858
 )
 
