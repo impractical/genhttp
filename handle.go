@@ -3,6 +3,9 @@ package genhttp
 import (
 	"context"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ResponseCreator is a factory type that is capable of generating new
@@ -62,6 +65,10 @@ type Handler[Request any, Response Responder] interface {
 func Handle[Request any, Response Responder](rf ResponseCreator[Response], handler Handler[Request, Response]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		tracer := otel.GetTracerProvider().Tracer("impractical.co/genhttp")
+		var span trace.Span
+		ctx, span = tracer.Start(ctx, "handleRequest")
+		defer span.End()
 
 		resp := rf.NewResponse(ctx, r)
 		defer resp.Send(ctx, w)
@@ -70,16 +77,25 @@ func Handle[Request any, Response Responder](rf ResponseCreator[Response], handl
 		}
 
 		var req Request
+		var parseSpan trace.Span
+		ctx, parseSpan = tracer.Start(ctx, "parseRequest")
 		req, ctx = handler.ParseRequest(ctx, r, resp)
+		parseSpan.End()
 		if resp.HasErrors() {
 			return
 		}
 
+		var validateSpan trace.Span
+		ctx, validateSpan = tracer.Start(ctx, "validateRequest")
 		ctx = handler.ValidateRequest(ctx, req, resp)
+		validateSpan.End()
 		if resp.HasErrors() {
 			return
 		}
 
+		var execSpan trace.Span
+		ctx, execSpan = tracer.Start(ctx, "executeRequest")
 		ctx = handler.ExecuteRequest(ctx, req, resp) //nolint:ineffassign,staticcheck // this is used by the deferred resp.Send
+		execSpan.End()
 	})
 }
