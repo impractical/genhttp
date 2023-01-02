@@ -24,6 +24,10 @@ type Responder interface {
 
 	// Send writes the response to the http.ResponseWriter.
 	Send(context.Context, http.ResponseWriter)
+
+	// HandlePanic updates the Response in the face of a panic while
+	// processing the request.
+	HandlePanic(ctx context.Context, recoverArg any)
 }
 
 // Handler is an endpoint that is going to parse, validate, and execute an HTTP
@@ -65,6 +69,13 @@ func Handle[Request any, Response Responder](rf ResponseCreator[Response], handl
 
 		resp := rf.NewResponse(ctx, r)
 		defer resp.Send(ctx, w)
+		defer func() {
+			msg := recover()
+			if msg == nil {
+				return
+			}
+			resp.HandlePanic(ctx, msg)
+		}()
 		if resp.HasErrors() {
 			return
 		}
