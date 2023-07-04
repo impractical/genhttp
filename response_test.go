@@ -127,6 +127,12 @@ func (r *Response) AddWarning(code apidiags.Code, paths ...apidiags.Steps) {
 	})
 }
 
+// HandlePanic updates the Response in the face of a panic while
+// processing the request.
+func (r *Response) HandlePanic(ctx context.Context, recoverArg any) {
+	r.t.Fatalf("panic: %v", recoverArg)
+}
+
 // An encoder is a strategy for converting a Response into bytes in response to
 // an Accept header.
 type encoder interface {
