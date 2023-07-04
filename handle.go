@@ -30,6 +30,16 @@ type Responder interface {
 	HandlePanic(ctx context.Context, recoverArg any)
 }
 
+// Redirecter is an interface describing a Responder that sometimes responds by
+// redirecting the client.
+type Redirecter interface {
+	// RedirectTo returns the URL to redirect to and the HTTP status code
+	// to use when redirecting. If the status code returned is between 300
+	// and 399, inclusive, genhttp will call http.Redirect with the
+	// returned URL and status code instead of calling Send.
+	RedirectTo() (url string, status int)
+}
+
 // Handler is an endpoint that is going to parse, validate, and execute an HTTP
 // request. Its Request type parameter should be a type that can describe the
 // request, usually a struct with JSON tags or something similar. The Response
@@ -68,7 +78,16 @@ func Handle[Request any, Response Responder](rf ResponseCreator[Response], handl
 		ctx := r.Context()
 
 		resp := rf.NewResponse(ctx, r)
-		defer resp.Send(ctx, w)
+		defer func() {
+			if red, ok := any(resp).(Redirecter); ok {
+				url, code := red.RedirectTo()
+				if code >= 300 && code < 400 {
+					http.Redirect(w, r, url, code)
+					return
+				}
+			}
+			resp.Send(ctx, w)
+		}()
 		defer func() {
 			msg := recover()
 			if msg == nil {
