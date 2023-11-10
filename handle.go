@@ -40,6 +40,14 @@ type Redirecter interface {
 	RedirectTo() (url string, status int)
 }
 
+// CookieWriter is an interface describing a Responder that sometimes responds
+// by writing cookies to the client.
+type CookieWriter interface {
+	// WriteCookies returns the cookies to write. An attempt is always made
+	// to write cookies.
+	WriteCookies() []*http.Cookie
+}
+
 // Handler is an endpoint that is going to parse, validate, and execute an HTTP
 // request. Its Request type parameter should be a type that can describe the
 // request, usually a struct with JSON tags or something similar. The Response
@@ -79,6 +87,11 @@ func Handle[Request any, Response Responder](rf ResponseCreator[Response], handl
 
 		resp := rf.NewResponse(ctx, r)
 		defer func() {
+			if cw, ok := any(resp).(CookieWriter); ok {
+				for _, cookie := range cw.WriteCookies() {
+					http.SetCookie(w, cookie)
+				}
+			}
 			if red, ok := any(resp).(Redirecter); ok {
 				url, code := red.RedirectTo()
 				if code >= 300 && code < 400 {
