@@ -123,6 +123,6 @@ func Handle[Request any, Response Responder](rf ResponseCreator[Response], handl
 			return
 		}
 
-		ctx = handler.ExecuteRequest(ctx, req, resp) //nolint:ineffassign,staticcheck // this is used by the deferred resp.Send
+		ctx = handler.ExecuteRequest(ctx, req, resp)
 	})
 }
