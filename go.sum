@@ -1,7 +1,7 @@
 github.com/adjust/goautoneg v0.0.0-20150426214442-d788f35a0315 h1:zje9aPr1kQ5nKwjO5MC0S/jehRtNrjfYuLfFRWZH6kY=
 github.com/adjust/goautoneg v0.0.0-20150426214442-d788f35a0315/go.mod h1:4U522XvlkqOY2AVBUM7ISHODDb6tdB+KAXfGaBDsWts=
-github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
-github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
+github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249 h1:NHrXEjTNQY7P0Zfx1aMrNhpgxHmow66XQtm0aQLY0AE=
 github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249/go.mod h1:mpRZBD8SJ55OIICQ3iWH0Yz3cjzA61JdqMLoWXeB2+8=
 impractical.co/apidiags v0.1.0 h1:qgMgMzRnBAGJZIvomgQkRwIff9z+/E9MScjWTM6x5Ec=
