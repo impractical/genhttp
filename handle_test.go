@@ -35,5 +35,5 @@ func TestHandler(t *testing.T) {
 		},
 	}
 
-	Handle[testRequest, *Response](factory, testHandler{})
+	Handle(factory, testHandler{})
 }

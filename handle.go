@@ -118,6 +118,15 @@ func Handle[Request any, Response Responder](respCreator ResponseCreator[Respons
 		if resp.HasErrors() {
 			return
 		}
+		// if we know we're going to redirect when we instantiate the
+		// response, do the redirect
+		if red, ok := any(resp).(Redirecter); ok {
+			if _, code := red.RedirectTo(); code >= 300 && code < 400 {
+				// don't need to redirect here, just let the
+				// defer handle it
+				return
+			}
+		}
 
 		var req Request
 		var parseSpan trace.Span
