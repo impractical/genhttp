@@ -8,6 +8,7 @@ import (
 
 	"github.com/adjust/goautoneg"
 	"github.com/google/go-cmp/cmp"
+
 	"impractical.co/apidiags"
 )
 
