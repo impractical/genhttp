@@ -18,7 +18,7 @@ func TestResponse(t *testing.T) {
 	rf := ResponseFactory{
 		t: t,
 	}
-	resp := rf.NewResponse(context.Background(), httptest.NewRequest("GET", "/", nil))
+	resp := rf.NewResponse(t.Context(), httptest.NewRequestWithContext(t.Context(), "GET", "/", nil))
 
 	if _, ok := resp.enc.(jsonEncoder); !ok {
 		t.Errorf("expected json encoder, got %T", resp.enc)

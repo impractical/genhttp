@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -86,13 +85,12 @@ type Handler[Request any, Response Responder] interface {
 // `true`, the Response's `Send` method is called and the function returns.
 func Handle[Request any, Response Responder](respCreator ResponseCreator[Response], handler Handler[Request, Response]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		tracer := otel.GetTracerProvider().Tracer("impractical.co/genhttp")
-		var span trace.Span
-		ctx, span = tracer.Start(ctx, "handleRequest")
+		parentSpan := trace.SpanFromContext(r.Context())
+		tracer := parentSpan.TracerProvider().Tracer("impractical.co/genhttp")
+		topCtx, span := tracer.Start(r.Context(), "handle_request")
 		defer span.End()
 
-		resp := respCreator.NewResponse(ctx, r)
+		resp := respCreator.NewResponse(topCtx, r)
 		defer func() {
 			if cw, ok := any(resp).(CookieWriter); ok {
 				for _, cookie := range cw.WriteCookies() {
@@ -102,18 +100,18 @@ func Handle[Request any, Response Responder](respCreator ResponseCreator[Respons
 			if red, ok := any(resp).(Redirecter); ok {
 				url, code := red.RedirectTo()
 				if code >= 300 && code < 400 {
-					http.Redirect(w, r, url, code)
+					http.Redirect(w, r, url, code) //nolint:gosec // the caller gets to pick the redirect path, it should only be set from trusted code
 					return
 				}
 			}
-			resp.Send(ctx, w)
+			resp.Send(topCtx, w)
 		}()
 		defer func() {
 			msg := recover()
 			if msg == nil {
 				return
 			}
-			resp.HandlePanic(ctx, msg)
+			resp.HandlePanic(topCtx, msg)
 		}()
 		if resp.HasErrors() {
 			return
@@ -129,25 +127,35 @@ func Handle[Request any, Response Responder](respCreator ResponseCreator[Respons
 		}
 
 		var req Request
-		var parseSpan trace.Span
-		ctx, parseSpan = tracer.Start(ctx, "parseRequest")
-		req, ctx = handler.ParseRequest(ctx, r, resp)
-		parseSpan.End()
-		if resp.HasErrors() {
-			return
-		}
+		func(ctx context.Context) {
+			var parseSpan trace.Span
+			ctx, parseSpan = tracer.Start(ctx, "parse_request")
+			defer parseSpan.End()
+			req, topCtx = handler.ParseRequest(ctx, r, resp)
+			if resp.HasErrors() {
+				return
+			}
+		}(topCtx)
 
-		var validateSpan trace.Span
-		ctx, validateSpan = tracer.Start(ctx, "validateRequest")
-		ctx = handler.ValidateRequest(ctx, req, resp)
-		validateSpan.End()
-		if resp.HasErrors() {
-			return
-		}
+		topCtx = trace.ContextWithSpan(topCtx, span)
 
-		var execSpan trace.Span
-		ctx, execSpan = tracer.Start(ctx, "executeRequest")
-		ctx = handler.ExecuteRequest(ctx, req, resp)
-		execSpan.End()
+		func(ctx context.Context) {
+			var validateSpan trace.Span
+			ctx, validateSpan = tracer.Start(ctx, "validate_request")
+			defer validateSpan.End()
+			topCtx = handler.ValidateRequest(ctx, req, resp)
+			if resp.HasErrors() {
+				return
+			}
+		}(topCtx)
+
+		topCtx = trace.ContextWithSpan(topCtx, span)
+
+		func(ctx context.Context) {
+			var execSpan trace.Span
+			ctx, execSpan = tracer.Start(ctx, "execute_request")
+			defer execSpan.End()
+			topCtx = handler.ExecuteRequest(ctx, req, resp)
+		}(topCtx)
 	})
 }
